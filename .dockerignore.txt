@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.git
+.gitignore
+README.md
+.vscode/
+.idea/
+venv/
+env/
+myenv/
+data/raw/
+notebooks/
+*.ipynb
+.DS_Store
