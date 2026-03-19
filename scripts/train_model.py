@@ -1,8 +1,6 @@
 # scripts/train_model.py
 import joblib
-import json
 import pandas as pd
-import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 from sklearn.pipeline import Pipeline

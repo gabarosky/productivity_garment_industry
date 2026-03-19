@@ -9,7 +9,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import json
 import shap
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -28,14 +27,9 @@ def cargar_artefactos():
     # return pipeline, explainer, metadata
     return pipeline, explainer
 
-# pipeline, explainer, metadata = cargar_artefactos()
+
 pipeline, explainer = cargar_artefactos()
 
-# Extraer información de metadata
-# numeric_cols = list(metadata['numeric_ranges'].keys())
-# numeric_ranges = metadata['numeric_ranges']
-# cat_cols = list(metadata['categorical_categories'].keys())
-# cat_categories = metadata['categorical_categories']
 
 # ------------------------------------------------------------
 # 2. function for waterfalls
