@@ -89,8 +89,10 @@ def main():
     # make a dataframe of transformed
     X_transformed_df = pd.DataFrame(X_transformed, columns=feature_names)
     # create explainer with train data
-    background = shap.sample(X_transformed_df, 100)  # 100 random samples for speed up
-    explainer = shap.Explainer(final_model, background)
+    explainer = shap.Explainer(final_model, X_transformed_df)
+    # background = shap.sample(X_transformed_df, 100)  # uncomment this lines 
+    # for a lighter training with 100 random samples for speed up
+    # explainer = shap.Explainer(final_model, background)
     joblib.dump(explainer, os.path.join(MODEL_DIR, 'explainer.pkl'))
 
     # 6. Save label encoder
@@ -100,7 +102,7 @@ def main():
     print("Generating metadata...")
     # Final feature names (after one-hot encoding)
     feature_names = best_pipeline.named_steps['preprocess'].get_feature_names_out()
-    feature_names_clean = [name.split('__')[-1] for name in feature_names]
+    # feature_names_clean = [name.split('__')[-1] for name in feature_names]
 
     # Ranges for numeric features (using original X, before transformation)
     numeric_ranges = {}
@@ -115,14 +117,14 @@ def main():
     for col in categorical_cols:
         categorical_categories[col] = X[col].unique().tolist()
 
-    metadata = {
-        'numeric_ranges': numeric_ranges,
-        'categorical_categories': categorical_categories,
-        'feature_names_final': feature_names_clean
-    }
+    # metadata = {
+    #     'numeric_ranges': numeric_ranges,
+    #     'categorical_categories': categorical_categories,
+    #     'feature_names_final': feature_names_clean
+    # }
 
-    with open(os.path.join(MODEL_DIR, 'feature_metadata.json'), 'w') as f:
-        json.dump(metadata, f, indent=2)
+#    with open(os.path.join(MODEL_DIR, 'feature_metadata.json'), 'w') as f:
+#        json.dump(metadata, f, indent=2)
 
     print("Process completed! Artifacts saved in", MODEL_DIR)
 
