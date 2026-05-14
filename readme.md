@@ -64,9 +64,9 @@ productivity_garmet_industry/
 │   ├── data_preprocessing.py     # load, clean and preprocess data
 │   └── train_model.py            # train the model and store the model artifacts
 ││
-├──  app.py         # Streamlit application
-│
-├──  Dockerfile     # Containerization setup
+├── app.py         # Streamlit application
+├── docker-compose.yml
+├── Dockerfile     # Containerization setup
 ├── .dockerignore   # Docker exclusion list
 ├── requirements.txt
 └── README.md
@@ -178,7 +178,7 @@ cd productivity_garmet_industry
 docker build -t productivity-shap-app .
 
 # Run the container
-docker run -p 8501:8501 productivity-shap-app
+docker-compose up
 
 # Open your browser and go to:
 # http://localhost:8501
