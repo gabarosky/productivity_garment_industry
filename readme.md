@@ -184,6 +184,8 @@ docker-compose up
 # http://localhost:8501
 
 ```
+The application will be available at http://localhost:8501.
+The execution logs will be automatically saved in the ./logs folder on your host machine.
 
 **Recommended:** Python 3.11+` 
 
