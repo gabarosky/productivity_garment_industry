@@ -10,16 +10,34 @@ import pandas as pd
 import numpy as np
 import joblib
 import shap
+import logging
+import os
 import matplotlib.pyplot as plt
+import matplotlib
 from io import BytesIO
 
 
 
 # ------------------------------------------------------------
-# 1. Load artifacts
+# 1. Set up logging
+# ------------------------------------------------------------
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s  - %(message)s',
+    handlers=[
+        logging.FileHandler("logs/app.log")
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------
+# 2. Load artifacts
 # ------------------------------------------------------------
 @st.cache_resource
-def cargar_artefactos():
+def load_artifacts():
     pipeline = joblib.load('model/modelo_pipeline.pkl')
     explainer = joblib.load('model/explainer.pkl')
     # with open('model/feature_metadata.json', 'r') as f:
@@ -28,11 +46,11 @@ def cargar_artefactos():
     return pipeline, explainer
 
 
-pipeline, explainer = cargar_artefactos()
+pipeline, explainer = load_artifacts()
 
 
 # ------------------------------------------------------------
-# 2. function for waterfalls
+# 3. function for waterfalls
 # ------------------------------------------------------------
 def plot_waterfall(sample, preprocessor, model, explainer):
     ''' This function take a sample of data, calculate Shapley values and plot a waterfall for 
@@ -111,7 +129,7 @@ def plot_waterfall(sample, preprocessor, model, explainer):
     
     
 # ------------------------------------------------------------
-# 3.  Layout setup: sidebar and two columns
+# 4.  Layout setup: sidebar and two columns
 # ------------------------------------------------------------
 st.set_page_config(page_title="Prediction with SHAP", layout="wide")
 st.title("🧵 Garment productivity prediction and interactive setting")
@@ -223,15 +241,6 @@ input_data['team'] = st.sidebar.selectbox(
     options=[1,2,3,4,5,6,7,8,9,10,11,12],
     index=0
 )
-# # Widgets para variables categóricas
-# for col in cat_cols:
-#     options = cat_categories[col]
-#     input_data[col] = st.sidebar.selectbox(
-#         f"**{col}**",
-#         options=options,
-#         index=0
-#     )
-
 
 left_col, right_col = st.columns([1, 3])
 
@@ -242,18 +251,9 @@ with left_col:
     # Provisory text
     prediction_placeholder.markdown("## _ _ _")
     
-    
-
-    
-    
     # Button for activate prediction
-    predecir = st.button("Predict / update", type="primary")
-    
-    # # Mostrar valores actuales (opcional, para referencia)
-    # with st.expander("📋 Ver valores seleccionados"):
-    #     for col, val in input_data.items():
-    #         st.write(f"{col}: {val}")
-
+    predict = st.button("Predict / update", type="primary")
+        
 with right_col:
     st.header("Waterfall explanatory for classes")
     # Placeholder para la imagen
@@ -264,20 +264,26 @@ with right_col:
 # ------------------------------------------------------------
 # 4. Prediction and plot generation
 # ------------------------------------------------------------
-if predecir:
+if predict:
     with st.spinner("Calculating predictions and SHAP..."):
         # Create DataFrame with the input data
         df_input = pd.DataFrame([input_data])
-        
+     
         # extract the preprocessor from pipeline
         preprocessor = pipeline.named_steps['preprocess']
         model = pipeline.named_steps['model']
         
         # make prediction
         prediction = pipeline.predict(df_input)[0]
-        
-        # change the matplotlib backend for avoiding emengent windows
-        import matplotlib
+
+        # log the prediction
+        logger.info("="*50) 
+        logger.info("New prediction started")
+        logger.info("Data input:")
+        logger.info(f"\n{df_input.to_string()}")
+        logger.info(f"Prediction obtained: {prediction}")
+
+        # change the matplotlib backend for avoiding emengent windows        
         matplotlib.use('Agg')
         
         # call the function for waterfalls
@@ -303,7 +309,7 @@ if predecir:
             prediction_placeholder.markdown(f"## {prediction}")
         
         with right_col:
-            waterfall_placeholder.image(imagen_bytes, use_container_width=True)
+            waterfall_placeholder.image(imagen_bytes, width='stretch')
         
         # n session_state para persistencia (por si se recarga la página)
         st.session_state.prediction = prediction
@@ -317,4 +323,4 @@ else:
         with left_col:
             prediction_placeholder.markdown(f"## {st.session_state.prediction}")
         with right_col:
-            waterfall_placeholder.image(st.session_state.waterfall_bytes, use_container_width=True)
+            waterfall_placeholder.image(st.session_state.waterfall_bytes, width='stretch')

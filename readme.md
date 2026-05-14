@@ -8,7 +8,7 @@
 The garment industry is a labor-intensive sector where productivity directly impacts operational costs and delivery timelines. The objective of this analysis is to predict and analyze the productivity performance of manufacturing teams. The study identifies key operational drivers and provides a tool for data-driven decision-making.
 
 ### 🎯 **Live Demo**
-🔗 **Try the app here:** [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]((https://performancetuner.streamlit.app/))
+🔗 **Try the app here:** [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://performancetuner.streamlit.app/)
 
 ----------
 
@@ -48,13 +48,17 @@ productivity_garmet_industry/
 ├── 📂 data/
 │   └── garments_worker_productivity.csv  # original dataset
 │
+├── 📂 logs/
+│   ├── .gitkeep             
+│   └── app.log              # Local execution logs 
+│
 ├── 📂 notebooks/                 
 │   └── initial.ipynb        # EDA, Model Selection, Training & Fitting, Evaluation, Lift Analysis & Business Analysis
 │
 ├── 📂 model/
-│   ├── eplainer.plk         # SHAPE explainer trained
-│   ├── label_encodeer.plk   # label encoder
-│   └── modelo_pipeline.plk  # model trained
+│   ├── eplainer.pkl         # SHAPE explainer trained
+│   ├── label_encodeer.pkl   # label encoder
+│   └── modelo_pipeline.pkl  # model trained
 │
 ├── 📂 scripts/
 │   ├── data_preprocessing.py     # load, clean and preprocess data
@@ -83,6 +87,7 @@ productivity_garmet_industry/
 ### 🖥️ Web Application 
 **Framework:** Streamlit
 **Visualization:** SHAP + Matplotlib
+**Logging:** Python `logging` library for prediction traceability.
 **Deployment:** Streamlit Cloud / Docker
 
 ----------
