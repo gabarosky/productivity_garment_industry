@@ -40,96 +40,118 @@ logger = logging.getLogger(__name__)
 def load_artifacts():
     pipeline = joblib.load('model/modelo_pipeline.pkl')
     explainer = joblib.load('model/explainer.pkl')
+    thresholds = joblib.load('model/thresholds.pkl')
     # with open('model/feature_metadata.json', 'r') as f:
     #     metadata = json.load(f)
     # return pipeline, explainer, metadata
-    return pipeline, explainer
+    return pipeline, explainer,thresholds
 
 
-pipeline, explainer = load_artifacts()
-
+pipeline, explainer,thresholds = load_artifacts()
 
 # ------------------------------------------------------------
-# 3. function for waterfalls
+# 3. discrtizing function
 # ------------------------------------------------------------
-def plot_waterfall(sample, preprocessor, model, explainer):
+def get_discrete_classes(y_cont: np.ndarray, thresholds: list) -> np.ndarray:
+    """ Convert continuous predictions to classes (1, 2, 3, 4) according thresholds."""
+    sorted_thresholds = np.sort(thresholds)
+    return np.digitize(y_cont, sorted_thresholds) + 1 
+# ------------------------------------------------------------
+# 4. function for waterfalls
+# ------------------------------------------------------------
+def plot_waterfall(sample, preprocessor, model, explainer, thresholds):
     ''' This function take a sample of data, calculate Shapley values and plot a waterfall for 
-    category in order to show the impact of each eature in the final prediction.
+    category in order to show the impact of each feature in the final prediction. Furthermore,
+    threshold boundaries are depicted
     Variables:
-    sample: a dataframe with the sample of variables to predict and analize.
-    model: the model used for predictions
-    prepreocessor: the preprocessor used for transform the data.
-    explainer: the Shapley explainer trained with data and model.'''
+    sample: pd.DataFrame
+        A single-row DataFrame with the sample of variables to predict and analize.
+    model: Estimator
+        The model used for predictions
+    preprocessor: ColumnTransformer / Pipeline
+        The preprocessor used for transform the data.
+    explainer: shap.Explainer
+        The Shapley explainer trained with data and model.
+    thresholds: list or array-like
+        A list of thresholds among categories.
+    sample_name: str, optional
+        A string for the title.'''
+    
     # transform the sample
     sample_transformed = preprocessor.transform(sample)
     feature_names = preprocessor.get_feature_names_out()
     sample_transformed_df = pd.DataFrame(sample_transformed, columns=feature_names)
 
-    # calculate the prediction
-    # pred_class = model.predict(sample_transformed_df.iloc[[0]].values)[0]
+    # make the continuos prediction and discretize
+    pred_cont = model.predict(sample_transformed_df.values)[0]
+    pred_class = get_discrete_classes(np.array([pred_cont]), thresholds)[0]
     
-    # calculate Shapley values
-    shap_val = explainer.shap_values(sample_transformed_df, approximate=True)
+    # obtain SHAP Values
+    shap_values = explainer(sample_transformed_df)
     
-    if isinstance(shap_val, list):
-        shap_list = shap_val
-    else:
-        #change the format 3D (n_samples, n_features, n_classes) to list of n_classes arrays of shape (n_samples, n_features)
-        shap_list = [shap_val[:, :, i] for i in range(shap_val.shape[2])]
-
-    # Change names and data for visualization
+    # prepare for plot
     display_data = []
     display_names = []
 
     for feat_name in feature_names:
-        base_name = feat_name.split("__")[-1]          # quit prefix num__ o cat__
+        base_name = feat_name.split("__")[-1]
         
         if base_name in sample.columns:
-            # If the name is a feature from the original dataframe
             value = sample[base_name].iloc[0]
             display_data.append(value)
-            display_names.append(f"{base_name}")
+            display_names.append(base_name.replace("_", " "))
         else:
-            # If the name isn't a feature from the original dataframe, then the name is name and value OHE
             parts = base_name.split('_', 1)
-            display_data.append(parts[1])
-            display_names.append(f"{parts[0]}")  
-    
-    # plot
-    fig, axes = plt.subplots(2, 2, figsize=(25, 12))
-    axes = axes.flatten()
+            display_data.append(parts[1] if len(parts) > 1 else parts[0])
+            display_names.append(parts[0].replace("_", " "))
 
-    # base values for each class
-    ev = explainer.expected_value
+    exp = shap.Explanation(
+        values=shap_values.values[0], 
+        base_values=shap_values.base_values[0],
+        data=np.array(display_data), 
+        feature_names=display_names
+    )
+
+    # plot axes
+    fig, ax = plt.subplots(figsize=(12, 7))
     
-    for i, ax in enumerate(axes):
+    # waterfall plot
+    shap.plots.waterfall(exp, max_display=12, show=False)
+    
+    # set axes limit
+    ax.set_xlim(0, 4)
+    
+    # Set thresholds
+    for t in thresholds:
+        ax.axvline(x=t, color='gray', linestyle='--', linewidth=1.2, alpha=0.7, zorder=1)
+
+    class_bounds = [0] + list(thresholds) + [4]
+    
+    y_top = ax.get_ylim()[1]
+    
+    # class labels
+    for i in range(4):
+        mid_point = (class_bounds[i] + class_bounds[i+1]) / 2
         
-        plt.sca(ax)
-        
-        # calculate explanation for the sample
-        exp = shap.Explanation(
-            values=shap_list[i][0], 
-            base_values=ev[i] if hasattr(ev, '__len__') else ev,
-            data=np.array(display_data), 
-            feature_names=display_names
+        ax.text(
+            mid_point, y_top * 0.08, f"C{i+1}", 
+            color='white', fontweight='bold', fontsize=10, 
+            ha='center', va='top',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='#333333', alpha=0.85, edgecolor='none')
         )
 
-        # plot
-        shap.plots.waterfall(exp, max_display=12, show=False)
-        
-        # format
-        ax.set_title(f"Class {i}", fontsize=14, pad=15)
-        ax.tick_params(axis='y', labelsize=8)
-        for text in ax.texts:
-            text.set_fontsize(7)
-
-    # fit space between subplots
-    plt.subplots_adjust(wspace=1.5, hspace=0.8)
+    plt.title(
+        f"SHAP Waterfall for user inputs\nContinuous prediction: {pred_cont:.3f} ➔ Predicted Class: C{pred_class}", 
+        fontsize=13, fontweight='bold', pad=25
+    )
+    
+    plt.tight_layout()
     plt.show()
+    return fig
     
     
 # ------------------------------------------------------------
-# 4.  Layout setup: sidebar and two columns
+# 5.  Layout setup: sidebar and two columns
 # ------------------------------------------------------------
 st.set_page_config(page_title="Prediction with SHAP", layout="wide")
 st.title("🧵 Garment productivity prediction and interactive setting")
@@ -151,14 +173,6 @@ st.markdown("---")
 input_data = {}
    
 # Slider for numericals
-input_data['targeted_productivity'] = st.sidebar.slider(
-    "**Targeted productivity**",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.75,
-    step=0.01,
-    format="%.2f"
-)
 input_data['no_of_workers'] = st.sidebar.slider(
     "**No of Workers**",
     min_value=2,
@@ -262,7 +276,7 @@ with right_col:
     waterfall_placeholder.info("Click 'Predict / update' for generate plots")
 
 # ------------------------------------------------------------
-# 4. Prediction and plot generation
+# 6. Prediction and plot generation
 # ------------------------------------------------------------
 if predict:
     with st.spinner("Calculating predictions and SHAP..."):
@@ -273,9 +287,13 @@ if predict:
         preprocessor = pipeline.named_steps['preprocess']
         model = pipeline.named_steps['model']
         
+        categorical_cols = ['department', 'day', 'team', 'quarter']
+        df_input[categorical_cols] = df_input[categorical_cols].astype(str)
         # make prediction
-        prediction = pipeline.predict(df_input)[0]
-
+        prediction_continuous = pipeline.predict(df_input)[0]
+        # discrtize
+        prediction = get_discrete_classes(prediction_continuous, thresholds)
+        
         # log the prediction
         logger.info("="*50) 
         logger.info("New prediction started")
@@ -291,7 +309,8 @@ if predict:
             sample=df_input,
             preprocessor=preprocessor,
             model=model,
-            explainer=explainer
+            explainer=explainer,
+            thresholds=thresholds
         )
         
         # capture the figure
@@ -311,12 +330,12 @@ if predict:
         with right_col:
             waterfall_placeholder.image(imagen_bytes, width='stretch')
         
-        # n session_state para persistencia (por si se recarga la página)
+        # Save to session_state for persistence (in case the page reloads)
         st.session_state.prediction = prediction
         st.session_state.waterfall_bytes = imagen_bytes
 
 # ------------------------------------------------------------
-# 5. If a prediction was previously made (via session_state), display the results upon page load.
+# 7. If a prediction was previously made (via session_state), display the results upon page load.
 # ------------------------------------------------------------
 else:
     if 'prediction' in st.session_state and 'waterfall_bytes' in st.session_state:
@@ -324,3 +343,6 @@ else:
             prediction_placeholder.markdown(f"## {st.session_state.prediction}")
         with right_col:
             waterfall_placeholder.image(st.session_state.waterfall_bytes, width='stretch')
+            
+            
+           

@@ -1,5 +1,7 @@
-# Driving garment production efficiency through predictive analytics and smart insights.
+# Predictive Analytics & Smart Insights for Garment Production
+### Optimizing daily manufacturing performance through machine learning and interactive simulation
 
+v 2.0
 
 
 
@@ -34,10 +36,11 @@ In this project, we replaced the 'actual_productivity' target with a categorical
 - Preprocessing with pipelines
 - Hyperparameter Tuning with Random Search
 - Cross-validation
-- Model Interpretability: Analyzing Individual Predictions
+- Model Interpretability: Global and local feature analysis
+- Prescriptive simulation
+- Benchmark comparison
 - Industrial implications
-- Prescriptive Analysis: Using SHAP for Decision Making
-    
+
 
 ----------
 ## 📁 4. Project Structure
@@ -46,7 +49,10 @@ In this project, we replaced the 'actual_productivity' target with a categorical
 productivity_garmet_industry/
 │
 ├── 📂 data/
-│   └── garments_worker_productivity.csv  # original dataset
+│   ├── 📂 raw/
+│   │   └── garments_worker_productivity.csv  # original dataset
+│   └── 📂 processed/
+│       └── dataset.csv
 │
 ├── 📂 logs/
 │   ├── .gitkeep             
@@ -75,35 +81,36 @@ productivity_garmet_industry/
 ## ⚙️ 5. Stack
 
 ### Modeling & Analysis
-- **Environment:** Jupyter Notebook · Python 3
+- **Language & Environment:** Python 3.11+ · Jupyter Notebook
 -   **Data manipulation:** pandas, NumPy, SciPy
--   **Visualization:** Matplotlib, Seaborn
--   **Modeling:** scikit-learn, XGBClassifier, LGBMClassifier
-    -   Algorithms: Logistic Regression, SVM, Random Forest, XGBClassifier, LGBMClassifier, Extratrees, KNN
-    -   Pipelines: Pipeline, ColumnTransformer, StandardScaler, OneHotEncoder
-    -   Tuning & validation: StratifiedKFold, RandomizedSearchCV
-    -   Metrics: MAE, F1-Score macro average, Balanced Accuracy
+-   **Visualization:** Matplotlib, Seaborn, SHAP
+-  **Machine Learning:** scikit-learn, XGBoost, LightGBM
+  * *Algorithms Evaluated:* Ridge, Random Forest, XGBoost, LightGBM, Extra Trees, K-Neighbors
+  * *Pipelines & Validation:* `Pipeline`, `ColumnTransformer`, `StandardScaler`, `OneHotEncoder`, `StratifiedKFold`, `RandomizedSearchCV`
+  * *Evaluation Metrics:* Quadratic Weighted Kappa (QWK), MAE, Macro F1-Score, Weighted F1-Score, Precision/Recall
 
 ### 🖥️ Web Application 
-**Framework:** Streamlit
-**Visualization:** SHAP + Matplotlib
-**Logging:** Python `logging` library for prediction traceability.
-**Deployment:** Streamlit Cloud / Docker
+* **Framework:** Streamlit
+* **Visualization:** SHAP + Matplotlib
+* **Logging:** Python `logging` library for prediction traceability.
+* **Containerization & Deployment:** Docker · Docker Compose · Streamlit Cloud
 
 ----------
 ## 📈 6. Results
+| Metric | Traditional Target (`targeted_productivity`) | Selected ML Model (Random Forest) | Improvement / Lift |
+| :--- | :---: | :---: | :---: |
+| **Accuracy** | 46.25% | **62.50%** | **+35.14% Lift** |
+| **MAE (Mean Absolute Error)** | 0.7208 | **0.4792** | **33.53% Error Reduction** |
+| **Macro F1-Score** | 0.3630 | **0.6113** | **+68.39% Lift** |
+| **Weighted F1-Score** | 0.3944 | **0.6233** | **+58.05% Lift** |
 
-Through a cross validation the metrics obtained were
-| Model        | F1 Macro Average | Balanced Accuracy | MAE  |
-|--------------|------------------|-------------------|-----------------------|
-| LogReg       | 0.518154         | 0.516586          | 0.667851              |
-| SVC          | 0.597866         | 0.591658          | 0.596195              |
-| RandomForest | 0.710819         | 0.712064          | 0.396645              |
-| XGBoost      | 0.702878         | 0.704577          | 0.410948              |
-| LightGBM     | 0.700600         | 0.701626          | 0.413334              |
-| ExtraTrees   | 0.708730         | 0.710022          | 0.396611              |
-| KNN          | 0.568091         | 0.565888          | 0.611740              |
-
+### Test Set Performance Metrics
+* **QWK (Test):** `0.6485` (Train QWK: `0.7145`)
+* **MAE (Test):** `0.4833` (Train MAE: `0.4305`)
+* **Class-Level Precision:**
+  * **Classes 1, 2, & 3:** Solid, balanced performance across baseline and intermediate tiers (F1-scores of `0.66`, `0.52`, and `0.69`).
+  * **Class 4 (High Productivity):** Traditional human targets completely fail to identify top-performing shifts (**0% Precision / Recall / F1**). The ML model effectively captures high-productivity capacity with **71% Precision** (`0.58` F1-score).
+  
 By using MAE, we ensure that the model is penalized based on the distance between the predicted and actual category, helping us avoid significant gaps in productivity forecasting. Therefore the selected model is Random Forest
 
 After parameter tunning, in test set:
@@ -112,44 +119,33 @@ After parameter tunning, in test set:
 - Balanced accuracy: 0.6985
 
 ----------
+## 🔎 7. Key Operational Insights (SHAP & Feature Importance)
 
-## 💰 7. Business Impact
+* **Primary Operational Driver:** Financial **`incentive`** is the single most important feature dictating shift output.
+* **Key Secondary Drivers:** **`smv`** (Standard Minute Value), **`no_of_workers`**, and **`over_time`** follow in order of predictive weight.
+* **Non-Linear Interactions:** Feature impact varies significantly depending on shift context, demonstrating complex interactions between workforce size and overtime limits.
+* **Rare Extremes in Error:** The distribution of errors shows that large misclassifications are extremely rare. Most prediction errors occur between adjacent classes (average deviation < 0.5 classes), with **zero absolute error in nearly 150 instances**.
 
+---
 
-The proposed productivity prediction has a lift of 1.42x, which means it is 42% more accurate than the baseline. This allows data-driven decision-makers to leverage insights and improve overall performance.
-   
+## 💰 8. Industrial Implications & Strategic Recommendations
 
-----------
-
-## 🔎 8. Key Insights
-
-
-1. **Targeted productivity is the primary global driver of the model.**  
-   Despite the shortcomings of targeted productivity for predicting productivity, it is a good input for our model.
-
-2. **Incentives show significant predictive weight, followed by team size and SMV.**  
-   This information is very important because incentives and the number of workers are levers for decision-making.
-
-3. **Simulation of the predicted production.**  
-   Using the model, it is possible to improve the predicted production using incentives, number of workers in the team, overtime; under the control of the decision-maker.
-   
-### Recommendation
-
-- Retain 'targeted productivity' as a core model input rather than a standalone metric.
-
-- Utilize productivity simulations as a strategic decision-making tool to optimize production lines.
+* **Correction of Systematic Target Overestimation:** Traditional goal-setting over-promises intermediate output while ignoring Class 4 high-productivity capacity. The model realigns plant expectations with true capacity, preventing downstream supply chain bottlenecks.
+* **Reduction of Planning Errors:** Minimizing 1- and 2-class prediction errors prevents costly over-staffing or under-staffing on the plant floor.
+* **Deploy "What-If" Simulations:** Plant managers can use the interactive web pipeline as a pre-shift decision-support tool. By tweaking actionable inputs (`incentive`, `no_of_workers`, `over_time`), management can simulate productivity outcomes **before committing budget**.
 
 ----------
 ## 🚀 9. Interactive App - How to Use
 
 ### 🎮 **Live Demo**
-🔗 **Try the app here:** [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]((https://performancetuner.streamlit.app/))
+🔗 **Try the app here:** [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]
+(https://performancetuner.streamlit.app/)
 
 ### **Features**
 - **Interactive sliders** for numerical variables
-- **Dropdown selectors** for categorical variables (department)
+- **Dropdown selectors** for categorical variables.
 - **Real-time prediction** (with button)
-- **SHAP Waterfall plots** for all 4 productivity classes
+- **SHAP Waterfall plot** provides a magnitude and sense of the impact of each variable
 - Visual explanation of how each feature contributes to the prediction
 
 ## 🛠️ 10. How to Run Locally
@@ -162,8 +158,17 @@ cd productivity_garmet_industry
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
-# Run the Streamlit app
+ **Optional**: Update data & retrain model
+
+If you need to re-process the raw data and train the model before launching:
+
+``` bash
+python scripts/data_preprocessing.py && python scripts/train_model.py
+```
+Run the app
+```
 streamlit run app.py
 ```
 
@@ -178,7 +183,7 @@ cd productivity_garmet_industry
 docker build -t productivity-shap-app .
 
 # Run the container
-docker-compose up
+docker-compose up --buid
 
 # Open your browser and go to:
 # http://localhost:8501
@@ -187,7 +192,7 @@ docker-compose up
 The application will be available at http://localhost:8501.
 The execution logs will be automatically saved in the ./logs folder on your host machine.
 
-**Recommended:** Python 3.11+` 
+**Recommended:** Python 3.11+
 
 
 ----------
